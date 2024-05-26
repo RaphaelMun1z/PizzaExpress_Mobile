@@ -13,6 +13,8 @@ import { Feather } from '@expo/vector-icons'
 import { api } from '../../services/api'
 import ModalPicker from '../../components/ModalPicker'
 import ListItem from '../../components/ListItem'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { StackParamsList } from '../../routes/app.routes'
 
 type RouteDetailParams = {
     Order: {
@@ -42,7 +44,7 @@ type OrderRouteProp = RouteProp<RouteDetailParams, "Order">
 
 const Order = () => {
     const route = useRoute<OrderRouteProp>()
-    const navigation = useNavigation()
+    const navigation = useNavigation<NativeStackNavigationProp<StackParamsList>>()
 
     const [category, setCategory] = useState<CategoryProps[] | []>([])
     const [categorySelected, setCategorySelected] = useState<CategoryProps | undefined>()
@@ -120,6 +122,27 @@ const Order = () => {
         setItems(oldArray => [...oldArray, data])
     }
 
+    const handleDeleteItem = async (item_id: string) => {
+        await api.delete("/order/remove", {
+            params: {
+                item_id: item_id
+            }
+        })
+
+        let removeItem = items.filter(item => {
+            return (item.id !== item_id)
+        })
+
+        setItems(removeItem)
+    }
+
+    const handleFinishOrder = () => {
+        navigation.navigate("FinishOrder", {
+            number: route.params?.number,
+            order_id: route.params?.order_id
+        })
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -166,6 +189,7 @@ const Order = () => {
                 <TouchableOpacity
                     style={[styles.button, { opacity: items.length === 0 ? .3 : 1 }]}
                     disabled={items.length === 0}
+                    onPress={handleFinishOrder}
                 >
                     <Text style={styles.buttonText}>Avançar</Text>
                 </TouchableOpacity>
@@ -176,7 +200,7 @@ const Order = () => {
                 style={{ flex: 1, marginTop: 24 }}
                 data={items}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <ListItem data={item} />}
+                renderItem={({ item }) => <ListItem data={item} deleteItem={handleDeleteItem} />}
             />
 
             <Modal
